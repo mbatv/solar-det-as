@@ -1,0 +1,9 @@
+{
+ "grid": "g1",
+ "tiles": 1240,
+ "failed": [],
+ "detections": 1163,
+ "inferMsPerTile": 498,
+ "totalSec": 724,
+ "finishedAt": "2026-11-04T20:21:14.877Z"
+}
