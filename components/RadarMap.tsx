@@ -165,7 +165,8 @@ export default function RadarMap() {
   const flightText = flight?.date ? new Date(flight.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : flight ? "date unavailable" : "…";
   // one plain-language line instead of percentiles
   const summary = a && (() => {
-    const p = a.peerRank?.percentile ?? a.townRank?.percentile;
+    const ranked = a.v.label !== LABELS.tooFew && a.v.label !== LABELS.noVerdict;
+    const p = ranked ? a.peerRank?.percentile ?? a.townRank?.percentile : null;
     const cmp = p == null ? "" : p <= 33 ? "fewer than in similar neighbourhoods" : p >= 67 ? "more than in similar neighbourhoods" : "about the same as similar neighbourhoods";
     return `${a.stats.withPanels} of ${a.stats.roofs} roofs already have solar (${pct(a.stats.share)})${cmp ? ` — ${cmp}` : ""}.`;
   })();
@@ -178,9 +179,13 @@ export default function RadarMap() {
     if (l === LABELS.mature) return { word: "MATURE", advice: "Many roofs already have solar — sell batteries, expansions and referrals." };
     return null;
   })();
+  const inPilot = (lat: number, lon: number) => lat >= PILOT.south && lat <= PILOT.north && lon >= PILOT.west && lon <= PILOT.east;
+  const dLat = radius / 110540, dLon = radius / (111320 * Math.cos((center[0] * Math.PI) / 180));
+  const outside = !inPilot(center[0], center[1]) || (a?.stats.roofs ?? 0) === 0;
+  const partial = !outside && !(inPilot(center[0] - dLat, center[1] - dLon) && inPilot(center[0] + dLat, center[1] + dLon));
   const pick = (id: number) => {
     const r = town?.roofs.find((x) => x[0] === id);
-    if (r) { setSelected(r); map.current?.panTo([r[2], r[1]]); }
+    if (r) { setSelected(r); map.current?.setView([r[2], r[1]], 19); }
   };
 
   return (
@@ -200,7 +205,7 @@ export default function RadarMap() {
         </header>
         <div className="dim small">Cambrils · aerial photo of {flightText}</div>
 
-        <Search onPick={(lat, lon) => { setSelected(null); setCenter([lat, lon]); map.current?.setView([lat, lon], 18); }} />
+        <Search onPick={(lat, lon) => { setSelected(null); setCenter([lat, lon]); const L = LRef.current; if (L) map.current?.fitBounds(L.latLng(lat, lon).toBounds(radius * 2.2)); }} />
 
         <section>
           <div className="dim small">Click the map to choose an area.</div>
@@ -222,9 +227,17 @@ export default function RadarMap() {
         {failed && <section><h2 className="verdict">NO VERDICT</h2><div className="dim">The scan data could not be loaded.</div></section>}
         {!town && !failed && <section><h2 className="verdict">MEASURING…</h2></section>}
 
-        {a && (
+        {a && outside && (
+          <section>
+            <h2 className="verdict">NO DATA HERE</h2>
+            <p>This spot is outside the scanned area (dotted box) or has no buildings. Click inside the box.</p>
+          </section>
+        )}
+
+        {a && !outside && (
           <>
             <section>
+              {partial && <div className="card small">Part of this circle is outside the scanned area — the numbers cover only the scanned part.</div>}
               {stage && (
                 <div className="stage">
                   <div className="stage-word">{stage.word}</div>
@@ -262,7 +275,7 @@ export default function RadarMap() {
               <summary className="dim">details & assumptions</summary>
               <div className="details">
                 <div>Share with solar: {pct(a.stats.share)} (likely {pct(a.stats.lo)}–{pct(a.stats.hi)})</div>
-                {a.stats.review > 0 && <div>{a.stats.review} roofs need a look on site (not counted)</div>}
+                {a.stats.review > 0 && <div>{a.stats.review} roofs need a look on site (not counted as having solar)</div>}
                 {a.peerRank && <div>Similar neighbourhoods: typical {pct(a.peerRank.median)}</div>}
                 {a.townRank && <div>Top quarter of town: {pct(a.townRank.q75)} or more</div>}
                 <ul className="dim">{a.v.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
@@ -285,8 +298,9 @@ export default function RadarMap() {
 function Search({ onPick }: { onPick: (lat: number, lon: number) => void }) {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<{ name: string; lat: number; lon: number }[]>([]);
+  const picked = useRef("");
   useEffect(() => {
-    if (q.trim().length < 3) return;
+    if (q.trim().length < 3 || q === picked.current) return;
     const ctl = new AbortController();
     const t = setTimeout(() => {
       fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&bbox=1.025,41.055,1.085,41.09&limit=5`, { signal: ctl.signal })
@@ -305,7 +319,7 @@ function Search({ onPick }: { onPick: (lat: number, lon: number) => void }) {
       <input placeholder="search a street in Cambrils…" value={q} onChange={(e) => { setQ(e.target.value); if (e.target.value.trim().length < 3) setHits([]); }} />
       {hits.length > 0 && (
         <ul>
-          {hits.map((h) => <li key={`${h.lat},${h.lon}`}><button onClick={() => { onPick(h.lat, h.lon); setHits([]); setQ(h.name); }}>{h.name}</button></li>)}
+          {hits.map((h) => <li key={`${h.lat},${h.lon}`}><button onClick={() => { picked.current = h.name; onPick(h.lat, h.lon); setHits([]); setQ(h.name); }}>{h.name}</button></li>)}
         </ul>
       )}
     </div>

@@ -5,3 +5,4 @@ models
 scripts/__pycache__
 public/debug/recheck
 *.tsbuildinfo
+.env*

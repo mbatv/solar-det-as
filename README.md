@@ -37,13 +37,26 @@ Overture building outlines (OSM + IGN) ──► roofs ≥ 40 m² ◄── box 
 | Check | Source | Result |
 |---|---|---|
 | Code matches the reference model | Ultralytics predict on the same tiles | 8/9 tiles identical; 1 box differs at exactly score 0.50 |
-| Panels in the right range | Catalan self-consumption registry (RAC, Socrata `2b4s-skfm`) | Cambrils: **1,140 registered installs** (8.3 MW) town-wide vs ~658 arrays detected in the pilot area (363 roofs + ~295 on unmapped buildings). The registry has no coordinates, so this is an order-of-magnitude check only |
+| Panels in the right range | Catalan self-consumption registry (RAC, Socrata `2b4s-skfm`) | Cambrils: **1,140 registered installs** (8.3 MW) town-wide vs **718 buildings with panels** detected in the pilot area. The registry has no coordinates, so this is an order-of-magnitude check only |
 | Town context | RAC + IDESCAT population 2025 | Cambrils 30.8 installs per 1,000 residents; neighbours 11.5–56.9 (`public/data/registry.json`) |
 | Sun | PVGIS v5.3 API | 1,463 kWh/kWp/yr (20° south, roof-mounted, 14% loss); used for every lead |
 | Flight date | ICGC WMS GetFeatureInfo on the photo layer itself | 2026-07-27, looked up for the point being viewed |
-| Expected adoption | Brief's sanity range 5–15% | 9.0% of roofs town-wide |
+| Expected adoption | Brief's sanity range 5–15% | 470 of 4265 mapped roofs ≈ 11% · 15.9% incl. 248 buildings we track ourselves (all with panels, so this figure runs high) |
 
 Details: [docs/SOURCES_VALIDATION.md](docs/SOURCES_VALIDATION.md).
+
+## Detection accuracy (hand-checked)
+
+| Check | Result |
+|---|---|
+| 98 hand-labelled arrays on 16 tiles ([docs/AUDIT.md](docs/AUDIT.md)) | single pass: **85% found, 88% correct**; adding the 2× zoom pass: 89% / 89% |
+| Passes now merged | 128 m grid + half-tile shifted grid + 2× zoom quarter-tiles (on tiles with buildings) + 2× roof-centred re-check before a roof becomes a lead |
+| Buildings missing from public maps | 248 tracked from their own panels (bluish/black, house-sized only, so fields and orchards are not counted); 258 added from the Cadastre |
+| Known misses | all-black arrays without a visible cell grid, 2–3 module arrays; false alarms: skylight rows, corrugated roofs, solar-thermal collectors. Next step: fine-tune on these labels |
+
+## Pages
+
+`/` landing · `/map` pick an area, verdict, leads, CSV, save · `/campaigns` saved areas · `/campaigns/[id]` work list with gated status, filters, CSV · `/debug` how detection works
 
 ## Assumptions (shown in the UI and printed in every CSV)
 
@@ -60,7 +73,12 @@ npm i && python3 -m venv .venv && .venv/bin/pip install ultralytics duckdb onnx
 .venv/bin/python scripts/export_onnx.py      # models/best.onnx (needs models/best.pt, pinned sha256 in docs/DETECTION.md)
 .venv/bin/python scripts/fetch_roofs.py      # Overture roofs -> public/data/roofs.json
 npx tsx scripts/scan.mts g0                  # town scan -> public/data/detections_g0.json
+npx tsx scripts/scan.mts g1                  # half-tile shifted grid
+npx tsx scripts/scan2x.mts 0 1               # 2x zoom pass
 npx tsx scripts/recheck.mts                  # roof-centred re-check
+npx tsx scripts/build_town.mts               # -> public/data/town.json (what the map loads)
+# Supabase: apply supabase/migrations/*.sql, then .env.local with
+# NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 npm run dev
 ```
 

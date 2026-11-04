@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { csvField } from "@/lib/leads";
 import {
   FILTERS,
@@ -168,7 +167,7 @@ export default function WorkList({ leads, csv }: { leads: WorkLead[]; csv: CsvIn
                   <LeadActions leadId={l.id} next={l.next} />
                 </span>
                 <span className={s.links}>
-                  {l.lat != null && l.lon != null && <Link href={radarHref(l.lat, l.lon)}>map ↗</Link>}
+                  {l.lat != null && l.lon != null && <a href={radarHref(l.lat, l.lon)}>map ↗</a>}
                   <button
                     type="button"
                     className={`${s.btn} ${s.dim}`}
