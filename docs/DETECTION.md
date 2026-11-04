@@ -62,3 +62,4 @@ Typical neighbourhoods ≈ 5–15% of roofs with panels; ~0% or > 40% town-wide 
 3. Half-tile offset pass merged by NMS, to recover arrays split by a tile edge.
 4. Calibration street: found / missed / false reported.
 5. Roadmap: fine-tune on rejected boxes (hard negatives) + calibrated streets, then PNOA tiles for all of Spain.
+- **Measured (2026-11-04):** PVGIS v5.3 gives 1,463 kWh/kWp/yr for a 20° south roof-mounted system in Cambrils (`public/data/pvgis.json`); the app uses that instead of the 1,560 estimate.

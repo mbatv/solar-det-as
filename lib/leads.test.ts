@@ -11,8 +11,8 @@ describe("sizeRoof", () => {
     const l = sizeRoof(roof(1, "none", 300, 2)); // 300 * 0.4 / 5 = 24 -> 10
     expect(l.segment).toBe("house");
     expect(l.kwp).toBe(10);
-    expect(l.kwhYr).toBe(15600);
-    expect(l.eurYr).toBe(1872);
+    expect(l.kwhYr).toBe(14630);
+    expect(l.eurYr).toBe(1756);
   });
   it("small house below the cap", () => {
     expect(sizeRoof(roof(1, "none", 80)).kwp).toBe(6.4);
@@ -21,8 +21,8 @@ describe("sizeRoof", () => {
     const l = sizeRoof(roof(2, "none", 400), 0.2);
     expect(l.segment).toBe("collective/business");
     expect(l.kwp).toBe(32);
-    expect(l.kwhYr).toBe(32 * 1560);
-    expect(l.eurYr).toBe(Math.round(32 * 1560 * 0.2));
+    expect(l.kwhYr).toBe(32 * 1463);
+    expect(l.eurYr).toBe(Math.round(32 * 1463 * 0.2));
   });
   it(">= 3 floors is uncapped even on a small footprint", () => {
     const l = sizeRoof(roof(3, "none", 200, 3));
@@ -61,13 +61,13 @@ describe("csv", () => {
     const comments = lines.filter((l) => l.startsWith("# "));
     const head = comments.join("\n");
     expect(lines[0].startsWith("# ")).toBe(true);
-    for (const v of ["0.4", "5 m2 per kWp", "10 kWp", "400 m2", "3 floors", "1560", "0.15 EUR/kWh", "41.060932", "1.038792", "250 m", "2025-07-14"]) {
+    for (const v of ["0.4", "5 m2 per kWp", "10 kWp", "400 m2", "3 floors", "1463", "0.15 EUR/kWh", "41.060932", "1.038792", "250 m", "2025-07-14"]) {
       expect(head).toContain(v);
     }
     expect(head).toContain("no panels observed on the aerial photo of 2025-07-14");
     const header = lines[comments.length];
     expect(header).toBe("rank,roof_id,lat,lon,footprint_m2,floors,segment,kwp,kwh_yr,eur_yr");
     expect(lines.length).toBe(comments.length + 3);
-    expect(lines[comments.length + 1]).toBe("1,1,41.060900,1.038800,450,1,collective/business,36.0,56160,8424");
+    expect(lines[comments.length + 1]).toBe("1,1,41.060900,1.038800,450,1,collective/business,36.0,52668,7900");
   });
 });

@@ -7,7 +7,7 @@ export const ASSUMPTIONS = {
   houseCapKwp: 10, // house quotes capped at 10 kWp
   largeRoofM2: 400, // roofs >= 400 m² are uncapped (collective/business)
   largeFloors: 3, // roofs with >= 3 floors are uncapped (collective/business)
-  yieldKwhPerKwp: 1560, // PVGIS yield for Cambrils, ≈ 1,560 kWh/kWp/yr
+  yieldKwhPerKwp: 1463, // PVGIS v5.3 for Cambrils, 20° south, roof-mounted, 14% loss (public/data/pvgis.json)
   defaultEurPerKwh: 0.12, // assumption, editable
 } as const;
 
@@ -116,7 +116,7 @@ export function leadsCsv(leads: Lead[], assumptions: Assumptions, meta: CsvMeta)
     comment(
       `house quotes capped at ${assumptions.houseCapKwp} kWp; roofs >= ${assumptions.largeRoofM2} m2 or >= ${assumptions.largeFloors} floors uncapped (segment collective/business)`,
     ),
-    comment(`kWh/yr = kWp x ${assumptions.yieldKwhPerKwp} (PVGIS yield for Cambrils)`),
+    comment(`kWh/yr = kWp x ${assumptions.yieldKwhPerKwp} (PVGIS v5.3, Cambrils, 20° roof-mounted)`),
     comment(`EUR/yr = kWh/yr x ${eur} EUR/kWh (assumption)`),
     ...(meta.generatedAt ? [comment(`generated: ${meta.generatedAt}`)] : []),
     ["rank", "roof_id", "lat", "lon", "footprint_m2", "floors", "segment", "kwp", "kwh_yr", "eur_yr"].join(","),

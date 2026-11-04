@@ -1,0 +1,383 @@
+{
+  "source": "PVGIS v5.3, European Commission Joint Research Centre",
+  "url": "https://re.jrc.ec.europa.eu/api/v5_3/PVcalc",
+  "license": "PVGIS data free to use with attribution (© European Union, JRC)",
+  "fetchedAt": "2026-11-04T20:04:16+00:00",
+  "meteo": {
+    "radiation_db": "PVGIS-SARAH3",
+    "meteo_db": "ERA5",
+    "year_min": 2005,
+    "year_max": 2023,
+    "use_horizon": true,
+    "horizon_db": "DEM-calculated"
+  },
+  "params": {
+    "peakpower": 1,
+    "loss": 14,
+    "outputformat": "json",
+    "mountingplace": "building",
+    "angle": 20,
+    "aspect": 0
+  },
+  "points": [
+    {
+      "name": "Cambrils centre",
+      "lat": 41.0687,
+      "lon": 1.059,
+      "elevationM": 12.0,
+      "slopeDeg": 20,
+      "azimuthDeg": 0,
+      "yearlyKwhPerKwp": 1457.32,
+      "yearlyIrradiationKwhM2": 1934.86,
+      "interannualSdKwh": 39.71,
+      "totalLossPct": -24.68,
+      "monthly": [
+        86.65,
+        94.46,
+        124.65,
+        136.19,
+        156.86,
+        158.73,
+        163.18,
+        148.97,
+        123.07,
+        103.11,
+        82.66,
+        78.79
+      ]
+    },
+    {
+      "name": "Pilot west",
+      "lat": 41.06,
+      "lon": 1.03,
+      "elevationM": 6.0,
+      "slopeDeg": 20,
+      "azimuthDeg": 0,
+      "yearlyKwhPerKwp": 1463.49,
+      "yearlyIrradiationKwhM2": 1943.89,
+      "interannualSdKwh": 41.14,
+      "totalLossPct": -24.71,
+      "monthly": [
+        86.88,
+        94.8,
+        125.16,
+        136.71,
+        157.47,
+        159.33,
+        164.34,
+        149.5,
+        123.89,
+        103.7,
+        82.94,
+        78.77
+      ]
+    },
+    {
+      "name": "Pilot north-east",
+      "lat": 41.085,
+      "lon": 1.08,
+      "elevationM": 30.0,
+      "slopeDeg": 20,
+      "azimuthDeg": 0,
+      "yearlyKwhPerKwp": 1469.29,
+      "yearlyIrradiationKwhM2": 1935.12,
+      "interannualSdKwh": 39.72,
+      "totalLossPct": -24.07,
+      "monthly": [
+        88.5,
+        95.84,
+        125.78,
+        136.71,
+        157.15,
+        158.76,
+        163.37,
+        149.73,
+        124.13,
+        104.69,
+        84.19,
+        80.44
+      ]
+    }
+  ],
+  "recommendedYield": 1463,
+  "recommendedConfig": "roof20_south_building",
+  "configs": {
+    "optimal_building": {
+      "params": {
+        "peakpower": 1,
+        "loss": 14,
+        "outputformat": "json",
+        "mountingplace": "building",
+        "optimalangles": 1
+      },
+      "meanYearlyKwhPerKwp": 1521.8,
+      "points": [
+        {
+          "name": "Cambrils centre",
+          "lat": 41.0687,
+          "lon": 1.059,
+          "elevationM": 12.0,
+          "slopeDeg": 38,
+          "azimuthDeg": 1,
+          "yearlyKwhPerKwp": 1515.47,
+          "yearlyIrradiationKwhM2": 2009.58,
+          "interannualSdKwh": 45.44,
+          "totalLossPct": -24.59,
+          "monthly": [
+            106.82,
+            108.75,
+            132.87,
+            135.41,
+            148.19,
+            146.28,
+            151.98,
+            145.09,
+            127.66,
+            114.61,
+            99.11,
+            98.7
+          ]
+        },
+        {
+          "name": "Pilot west",
+          "lat": 41.06,
+          "lon": 1.03,
+          "elevationM": 6.0,
+          "slopeDeg": 38,
+          "azimuthDeg": 1,
+          "yearlyKwhPerKwp": 1520.76,
+          "yearlyIrradiationKwhM2": 2017.86,
+          "interannualSdKwh": 47.09,
+          "totalLossPct": -24.63,
+          "monthly": [
+            106.77,
+            108.89,
+            133.37,
+            135.98,
+            148.97,
+            147.04,
+            153.25,
+            145.71,
+            128.5,
+            115.14,
+            98.98,
+            98.17
+          ]
+        },
+        {
+          "name": "Pilot north-east",
+          "lat": 41.085,
+          "lon": 1.08,
+          "elevationM": 30.0,
+          "slopeDeg": 38,
+          "azimuthDeg": 2,
+          "yearlyKwhPerKwp": 1529.16,
+          "yearlyIrradiationKwhM2": 2009.89,
+          "interannualSdKwh": 45.44,
+          "totalLossPct": -23.92,
+          "monthly": [
+            109.1,
+            110.35,
+            134.09,
+            135.95,
+            148.48,
+            146.32,
+            152.12,
+            145.86,
+            128.8,
+            116.37,
+            100.93,
+            100.77
+          ]
+        }
+      ]
+    },
+    "roof20_south_building": {
+      "params": {
+        "peakpower": 1,
+        "loss": 14,
+        "outputformat": "json",
+        "mountingplace": "building",
+        "angle": 20,
+        "aspect": 0
+      },
+      "meanYearlyKwhPerKwp": 1463.4,
+      "points": [
+        {
+          "name": "Cambrils centre",
+          "lat": 41.0687,
+          "lon": 1.059,
+          "elevationM": 12.0,
+          "slopeDeg": 20,
+          "azimuthDeg": 0,
+          "yearlyKwhPerKwp": 1457.32,
+          "yearlyIrradiationKwhM2": 1934.86,
+          "interannualSdKwh": 39.71,
+          "totalLossPct": -24.68,
+          "monthly": [
+            86.65,
+            94.46,
+            124.65,
+            136.19,
+            156.86,
+            158.73,
+            163.18,
+            148.97,
+            123.07,
+            103.11,
+            82.66,
+            78.79
+          ]
+        },
+        {
+          "name": "Pilot west",
+          "lat": 41.06,
+          "lon": 1.03,
+          "elevationM": 6.0,
+          "slopeDeg": 20,
+          "azimuthDeg": 0,
+          "yearlyKwhPerKwp": 1463.49,
+          "yearlyIrradiationKwhM2": 1943.89,
+          "interannualSdKwh": 41.14,
+          "totalLossPct": -24.71,
+          "monthly": [
+            86.88,
+            94.8,
+            125.16,
+            136.71,
+            157.47,
+            159.33,
+            164.34,
+            149.5,
+            123.89,
+            103.7,
+            82.94,
+            78.77
+          ]
+        },
+        {
+          "name": "Pilot north-east",
+          "lat": 41.085,
+          "lon": 1.08,
+          "elevationM": 30.0,
+          "slopeDeg": 20,
+          "azimuthDeg": 0,
+          "yearlyKwhPerKwp": 1469.29,
+          "yearlyIrradiationKwhM2": 1935.12,
+          "interannualSdKwh": 39.72,
+          "totalLossPct": -24.07,
+          "monthly": [
+            88.5,
+            95.84,
+            125.78,
+            136.71,
+            157.15,
+            158.76,
+            163.37,
+            149.73,
+            124.13,
+            104.69,
+            84.19,
+            80.44
+          ]
+        }
+      ]
+    },
+    "roof20_south_free": {
+      "params": {
+        "peakpower": 1,
+        "loss": 14,
+        "outputformat": "json",
+        "mountingplace": "free",
+        "angle": 20,
+        "aspect": 0
+      },
+      "meanYearlyKwhPerKwp": 1520.7,
+      "points": [
+        {
+          "name": "Cambrils centre",
+          "lat": 41.0687,
+          "lon": 1.059,
+          "elevationM": 12.0,
+          "slopeDeg": 20,
+          "azimuthDeg": 0,
+          "yearlyKwhPerKwp": 1514.33,
+          "yearlyIrradiationKwhM2": 1934.86,
+          "interannualSdKwh": 41.66,
+          "totalLossPct": -21.73,
+          "monthly": [
+            89.22,
+            97.68,
+            129.38,
+            141.82,
+            163.58,
+            165.73,
+            170.44,
+            155.5,
+            128.08,
+            106.84,
+            85.15,
+            80.91
+          ]
+        },
+        {
+          "name": "Pilot west",
+          "lat": 41.06,
+          "lon": 1.03,
+          "elevationM": 6.0,
+          "slopeDeg": 20,
+          "azimuthDeg": 0,
+          "yearlyKwhPerKwp": 1521.14,
+          "yearlyIrradiationKwhM2": 1943.89,
+          "interannualSdKwh": 43.2,
+          "totalLossPct": -21.75,
+          "monthly": [
+            89.48,
+            98.05,
+            129.93,
+            142.4,
+            164.27,
+            166.4,
+            171.71,
+            156.09,
+            128.96,
+            107.48,
+            85.46,
+            80.91
+          ]
+        },
+        {
+          "name": "Pilot north-east",
+          "lat": 41.085,
+          "lon": 1.08,
+          "elevationM": 30.0,
+          "slopeDeg": 20,
+          "azimuthDeg": 0,
+          "yearlyKwhPerKwp": 1526.72,
+          "yearlyIrradiationKwhM2": 1935.12,
+          "interannualSdKwh": 41.67,
+          "totalLossPct": -21.1,
+          "monthly": [
+            91.12,
+            99.1,
+            130.55,
+            142.36,
+            163.89,
+            165.76,
+            170.64,
+            156.3,
+            129.18,
+            108.47,
+            86.73,
+            82.62
+          ]
+        }
+      ]
+    }
+  },
+  "notes": [
+    "Yield = AC energy per 1 kWp after 14% system losses (PVGIS default) plus temperature/angle-of-incidence/spectral losses; horizon shading from DEM, no local building shading.",
+    "recommendedYield uses a 20 deg south-facing flush roof (building thermal model) averaged over the 3 points: the conservative, typical-rooftop case.",
+    "East/west-facing or shaded roofs yield less; flat-roof racked systems at optimal tilt yield more (see configs)."
+  ]
+}
