@@ -36,6 +36,13 @@ export default function RadarMap() {
   const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
 
+  // /map?lat=..&lon=.. (links from a campaign) opens on that roof
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const lat = Number(q.get("lat")), lon = Number(q.get("lon"));
+    if (lat && lon) setCenter([lat, lon]);
+  }, []);
+
   useEffect(() => {
     fetch("/data/town.json").then((r) => r.json()).then(setTown).catch(() => setFailed(true));
   }, []);
@@ -54,7 +61,9 @@ export default function RadarMap() {
       if (!alive || !el.current) return;
       const L = (mod.default ?? mod) as typeof Leaflet;
       LRef.current = L;
-      const m = L.map(el.current, { preferCanvas: true, zoomControl: true, attributionControl: true }).setView(START, 18);
+      const q = new URLSearchParams(window.location.search);
+      const start: [number, number] = Number(q.get("lat")) && Number(q.get("lon")) ? [Number(q.get("lat")), Number(q.get("lon"))] : START;
+      const m = L.map(el.current, { preferCanvas: true, zoomControl: true, attributionControl: true }).setView(start, 19);
       map.current = m;
       L.tileLayer.wms(WMS, { layers: LAYER, format: "image/jpeg", maxZoom: 21, maxNativeZoom: 20, attribution: "Orthophoto © ICGC · Buildings © Overture Maps (OSM, IGN)" } as Leaflet.WMSOptions).addTo(m);
       const renderer = L.canvas({ padding: 0.5, tolerance: 3 });
