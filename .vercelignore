@@ -1,0 +1,7 @@
+models
+.playwright-cli
+.cache
+.venv
+scripts/__pycache__
+public/debug/recheck
+*.tsbuildinfo

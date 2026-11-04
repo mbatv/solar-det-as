@@ -9,7 +9,7 @@ const roofs: (Roof & { src?: string })[] = JSON.parse(readFileSync(roofFile, "ut
 type D = { g: string; lon: number; lat: number; bb: [number, number, number, number]; score: number; tier: "panel" | "review"; reject: string | null };
 // Grid g0 + half-tile shifted grid g1: merge duplicates by geographic overlap (greedy NMS on lon/lat boxes),
 // so an array cut by a g0 tile edge is recovered whole from g1.
-const raw: D[] = ["g0", "g1"].filter((g) => existsSync(`public/data/detections_${g}.json`))
+const raw: D[] = ["g0", "g1", "z2_0", "z2_1"].filter((g) => existsSync(`public/data/detections_${g}.json`))
   .flatMap((g) => JSON.parse(readFileSync(`public/data/detections_${g}.json`, "utf8")));
 const giou = (a: D["bb"], b: D["bb"]) => {
   const w = Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])), h = Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));

@@ -20,7 +20,7 @@ Overture building outlines (OSM + IGN) ──► roofs ≥ 40 m² ◄── box 
                          click a circle ──► verdict + work items + leads (kWp, kWh/yr, €/yr) ──► CSV / campaign (Supabase)
 ```
 
-1. **Detection:** pinned model `finloop/yolov8s-seg-solar-panels` (MIT), exported to ONNX and run with onnxruntime. The same pre- and post-processing code runs in Node (town scan) and the browser (live check).
+1. **Detection:** pinned model `finloop/yolov8s-seg-solar-panels` (MIT), exported to ONNX and run with onnxruntime. The pre- and post-processing is plain TypeScript (`lib/detect.ts`) with no Node-only dependencies, so a live in-browser check (onnxruntime-web) can reuse it; that check is not built yet.
 2. **Three roof states, not two:** `panel` (score ≥ 0.50), `needs review` (0.35–0.50, never counted and never treated as a lead), `no panels observed`.
 3. **Filters for false positives:** pixels inside each box are tested for sea/pools (saturation), greenhouses/trees (green excess) and white shade structures (brightness). Rejected boxes are kept with a reason, not deleted.
 4. **Second look before a lead:** every roof without a panel is re-checked on a roof-centred crop at 2× zoom (no tile edges, small arrays bigger), using cached tiles only.
