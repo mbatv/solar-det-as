@@ -43,7 +43,12 @@ for (const d of dets) {
 // Panels on no mapped building: cluster boxes closer than 3 m and track the cluster as our own
 // "detected building" (outline = boxes + 2 m margin). Counts as a roof with panels; src "detected".
 const M_LAT = 1 / 110540, M_LON = 1 / (111320 * Math.cos((41.07 * Math.PI) / 180));
-const off = dets.filter((d) => !d.reject && d.tier === "panel" && !find(d.lon, d.lat));
+// Stricter than on-roof boxes: an orchard's tree rows can look like panel rows (green excess 2-5, which
+// passes the general filter of 6), so off-roof boxes must be bluish/black (green < 2; 90% of on-roof
+// panel boxes are below 1.1) and no single box may exceed 400 m2.
+type DC = D & { green: number; px: number[] };
+const boxM2 = (d: DC) => ((d.px[2] - d.px[0]) * (d.px[3] - d.px[1])) / 16;
+const off = (dets as DC[]).filter((d) => !d.reject && d.tier === "panel" && !find(d.lon, d.lat) && d.green < 2 && boxM2(d) <= 400);
 const parent = off.map((_, i) => i);
 const root = (i: number): number => (parent[i] === i ? i : (parent[i] = root(parent[i])));
 for (let i = 0; i < off.length; i++)
@@ -56,10 +61,13 @@ const clusters = new Map<number, D[]>();
 off.forEach((d, i) => { const r = root(i); clusters.set(r, [...(clusters.get(r) ?? []), d]); });
 let nextId = Math.max(...roofs.map((r) => r.id)) + 1;
 const detected: (Roof & { src: string })[] = [];
+let largeOffRoof = 0;
 for (const ds of clusters.values()) {
   const w = Math.min(...ds.map((d) => d.bb[0])) - 2 * M_LON, s = Math.min(...ds.map((d) => d.bb[1])) - 2 * M_LAT;
   const e = Math.max(...ds.map((d) => d.bb[2])) + 2 * M_LON, n = Math.max(...ds.map((d) => d.bb[3])) + 2 * M_LAT;
   const area = ((e - w) / M_LON) * ((n - s) / M_LAT);
+  // a house-sized building only: bigger clusters are fields / ground-mounted arrays, not roof leads
+  if (area > 600) { largeOffRoof++; continue; }
   const roof = { id: nextId++, oid: "detected", area: +area.toFixed(1), floors: null, h: null, src: "detected",
     ring: [[w, s], [e, s], [e, n], [w, n], [w, s]].map(([x, y]) => [+x.toFixed(6), +y.toFixed(6)]) as [number, number][] };
   detected.push(roof);
@@ -89,7 +97,7 @@ for (const r of roofs) {
 }
 const cellArr = [...cells].map(([key, c]) => ({ key, roofs: c.roofs, withPanels: c.withPanels, largeRoofShare: +(c.large / c.area).toFixed(3) }));
 const withPanels = out.filter((r) => r[5] === 2).length;
-const meta = { roofSource: roofFile.split("/").pop(), grids: grids.join("+"), detectedBuildings: detected.length, roofs: out.length, withPanels, review: out.filter((r) => r[5] === 1).length,
+const meta = { roofSource: roofFile.split("/").pop(), grids: grids.join("+"), detectedBuildings: detected.length, largeOffRoofClustersDropped: largeOffRoof, roofs: out.length, withPanels, review: out.filter((r) => r[5] === 1).length,
   foundByRecheck: out.filter((r) => r[7] === 1 && r[5] === 2).length, recheckChecked: recheck?.checked ?? 0, offRoofPanelBoxes: offRoof,
   share: +(withPanels / out.length).toFixed(4), rankedCells: cellArr.filter((c) => c.roofs >= 15).length, builtAt: new Date().toISOString() };
 writeFileSync("public/data/town.json", JSON.stringify({ meta, roofs: out, cells: cellArr, boxes }));
