@@ -8,3 +8,31 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { background: var(--paper); color: var(--ink); font-family: var(--mono); font-size: 14px; line-height: 1.5; }
 a { color: inherit; }
+
+/* map page */
+.radar { display: grid; grid-template-columns: 1fr 420px; height: 100dvh; }
+.radar-map { height: 100%; background: #111; }
+.radar-panel { overflow-y: auto; border-left: 1px solid var(--line); padding: 16px; display: grid; gap: 16px; align-content: start; font-size: 13px; }
+.radar-panel h2 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.radar-panel .verdict { font-size: 15px; border: 1px solid var(--ink); padding: 6px 8px; display: inline-block; }
+.radar-panel section { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 4px; }
+.radar-panel ul { list-style: none; display: grid; gap: 2px; margin-top: 6px; }
+.radar-panel .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.radar-panel table { border-collapse: collapse; width: 100%; margin-top: 6px; }
+.radar-panel th { text-align: left; font-weight: 400; color: var(--dim); border-bottom: 1px solid var(--line); }
+.radar-panel td, .radar-panel th { padding: 2px 6px 2px 0; }
+.radar-panel tbody tr { cursor: pointer; }
+.radar-panel tbody tr:hover { background: #1a1a1a; }
+.dim { color: var(--dim); }
+.small { font-size: 11px; }
+button { font: inherit; background: none; color: var(--ink); border: 0; cursor: pointer; padding: 0; }
+button.on { background: var(--ink); color: var(--paper); }
+button:disabled { color: var(--dim); cursor: default; }
+input[type="number"] { font: inherit; background: var(--paper); color: var(--ink); border: 1px solid var(--line); width: 70px; padding: 1px 4px; }
+.leaflet-container { font-family: var(--mono); background: #111; }
+.leaflet-control-layers, .leaflet-bar a, .leaflet-control-attribution { background: #000 !important; color: var(--ink) !important; border-radius: 0 !important; }
+.leaflet-control-attribution a { color: var(--ink); }
+@media (max-width: 800px) {
+  .radar { grid-template-columns: 1fr; grid-template-rows: 55dvh auto; height: auto; }
+  .radar-panel { border-left: 0; border-top: 1px solid var(--line); }
+}
