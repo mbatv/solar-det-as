@@ -10,17 +10,18 @@ export default function Debug() {
   useEffect(() => { fetch("/debug/tiles.json").then((r) => r.json()).then(setData); }, []);
   if (!data) return <main style={{ padding: 24 }}>loading…</main>;
   const all = data.tiles.flatMap((t) => t.boxes);
-  const kept = all.filter((b) => !b.reject);
+  const kept = all.filter((b) => !b.reject && b.tier === "panel");
+  const review = all.filter((b) => !b.reject && b.tier === "review");
   const avg = (k: "inferMs") => Math.round(data.tiles.reduce((s, t) => s + t[k], 0) / data.tiles.length);
   return (
     <main style={{ padding: 24, display: "grid", gap: 16 }}>
       <header>
         <h1 style={{ fontSize: 14, fontWeight: 400 }}>DETECTION CHECK · Carrer d&apos;Auguste Renoir · 3×3 tiles (384 m)</h1>
         <p style={{ color: "var(--dim)" }}>
-          kept {kept.length} · rejected {all.length - kept.length} · score ≥ 0.50 · NMS 0.45 · infer {avg("inferMs")} ms/tile ·{" "}
+          panels {kept.length} · needs review {review.length} · rejected {all.filter((b) => b.reject).length} · panel ≥ 0.50 · review 0.35–0.50 · NMS 0.45 · infer {avg("inferMs")} ms/tile ·{" "}
           <label><input type="checkbox" checked={showRejected} onChange={(e) => setShowRejected(e.target.checked)} /> show rejected</label>
         </p>
-        <p style={{ color: "var(--dim)" }}>solid = counted panel array · dashed = rejected by colour filter (reason shown)</p>
+        <p style={{ color: "var(--dim)" }}>solid = counted panel array · dotted = needs review (0.35–0.50, not counted) · dashed grey = rejected by colour filter (reason shown)</p>
       </header>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 512px))", gap: 0, border: "1px solid var(--line)", width: "fit-content" }}>
         {data.tiles.map((t) => (
@@ -31,16 +32,16 @@ export default function Debug() {
               {t.boxes.filter((b) => showRejected || !b.reject).map((b, i) => (
                 <g key={i}>
                   <rect x={b.x1} y={b.y1} width={b.x2 - b.x1} height={b.y2 - b.y1} fill="none"
-                    stroke={b.reject ? "#9a9a9a" : "#fff"} strokeWidth={2} strokeDasharray={b.reject ? "4 3" : undefined} />
+                    stroke={b.reject ? "#9a9a9a" : "#fff"} strokeWidth={b.tier === "review" ? 1 : 2} strokeDasharray={b.reject ? "4 3" : b.tier === "review" ? "1 2" : undefined} />
                   <text x={b.x1} y={Math.max(10, b.y1 - 3)} fill={b.reject ? "#9a9a9a" : "#fff"} fontSize={11}
                     style={{ paintOrder: "stroke", stroke: "#000", strokeWidth: 3 }}>
-                    {b.score.toFixed(2)}{b.reject ? ` ${b.reject}` : ""}
+                    {b.score.toFixed(2)}{b.reject ? ` ${b.reject}` : b.tier === "review" ? " ?" : ""}
                   </text>
                 </g>
               ))}
             </svg>
             <span style={{ position: "absolute", left: 4, bottom: 2, fontSize: 11, background: "#000" }}>
-              {t.col},{t.row} · {t.boxes.filter((b) => !b.reject).length} kept · {t.inferMs} ms
+              {t.col},{t.row} · {t.boxes.filter((b) => !b.reject && b.tier === "panel").length} panels · {t.inferMs} ms
             </span>
           </div>
         ))}
@@ -51,7 +52,7 @@ export default function Debug() {
           {data.tiles.flatMap((t) => t.boxes.map((b, i) => (
             <tr key={`${t.col}_${t.row}_${i}`}>
               <td>{t.col},{t.row}</td><td>{b.score.toFixed(2)}</td><td>{b.V.toFixed(0)}</td><td>{b.sat.toFixed(2)}</td><td>{b.green.toFixed(1)}</td>
-              <td>{b.reject ?? "kept"}</td>
+              <td>{b.reject ?? (b.tier === "review" ? "needs review" : "panel")}</td>
             </tr>
           )))}
         </tbody>

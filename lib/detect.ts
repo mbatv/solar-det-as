@@ -1,11 +1,14 @@
 // Shared YOLOv8-seg post-processing + colour filter. Runs in Node (scan) and the browser (live check).
 export const INPUT = 640;
 export const SCORE_MIN = 0.5;
+// 0.35-0.50 is kept as "needs review": not counted as a panel, but the roof is not called "no panels" either.
+export const REVIEW_MIN = 0.35;
 export const NMS_IOU = 0.45;
 
 export type Box = {
   x1: number; y1: number; x2: number; y2: number; // 512 px tile space
   score: number;
+  tier: "panel" | "review";
   V: number; sat: number; green: number;
   reject: null | "sea_pool" | "vegetation" | "white_structure";
 };
@@ -38,7 +41,7 @@ export function nms<T extends Box>(boxes: T[], thr = NMS_IOU): T[] {
 }
 
 // output0 is [1, 37, 8400] row-major: value(c, i) = out[c * 8400 + i]. Column 4 is the panel score.
-export function decode(out: Float32Array, tilePx: number, scoreMin = SCORE_MIN): Box[] {
+export function decode(out: Float32Array, tilePx: number, scoreMin = REVIEW_MIN): Box[] {
   const N = 8400;
   const s = tilePx / INPUT;
   const raw: Box[] = [];
@@ -47,7 +50,7 @@ export function decode(out: Float32Array, tilePx: number, scoreMin = SCORE_MIN):
     if (score < scoreMin) continue;
     const cx = out[i] * s, cy = out[N + i] * s, w = out[2 * N + i] * s, h = out[3 * N + i] * s;
     const clip = (v: number) => Math.max(0, Math.min(tilePx, v));
-    const b = { x1: clip(cx - w / 2), y1: clip(cy - h / 2), x2: clip(cx + w / 2), y2: clip(cy + h / 2), score, V: 0, sat: 0, green: 0, reject: null };
+    const b = { x1: clip(cx - w / 2), y1: clip(cy - h / 2), x2: clip(cx + w / 2), y2: clip(cy + h / 2), score, tier: (score >= SCORE_MIN ? "panel" : "review") as Box["tier"], V: 0, sat: 0, green: 0, reject: null };
     if (b.x2 - b.x1 >= 1 && b.y2 - b.y1 >= 1) raw.push(b);
   }
   return nms(raw);

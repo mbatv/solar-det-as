@@ -18,6 +18,6 @@ for (let dr = 1; dr >= -1; dr--)
     const { boxes, ms } = await detectJpeg(session, jpeg);
     await copyFile(`.cache/tiles/g0/${t.col}_${t.row}.jpg`, `public/debug/${t.col}_${t.row}.jpg`);
     out.push({ col: t.col, row: t.row, fetchMs: Math.round(fetchMs), inferMs: Math.round(ms), boxes });
-    console.log(`${t.col},${t.row} fetch ${fetchMs.toFixed(0)}ms infer ${ms.toFixed(0)}ms kept ${boxes.filter((b) => !b.reject).length} rejected ${boxes.filter((b) => b.reject).length}`);
+    console.log(`${t.col},${t.row} fetch ${fetchMs.toFixed(0)}ms infer ${ms.toFixed(0)}ms panels ${boxes.filter((b) => !b.reject && b.tier === "panel").length} review ${boxes.filter((b) => !b.reject && b.tier === "review").length} rejected ${boxes.filter((b) => b.reject).length}`);
   }
 await writeFile("public/debug/tiles.json", JSON.stringify({ center: c, tiles: out }));

@@ -52,3 +52,10 @@ export function pxToLonLat(t: Tile, px: number, py: number): [number, number] {
   const [x0, y0, x1, y1] = t.bbox;
   return fromMerc(x0 + (px / TILE_PX) * (x1 - x0), y1 - (py / TILE_PX) * (y1 - y0));
 }
+
+// EPSG:3857 point -> which tile of grid g0 it falls in, and the pixel inside that tile (y down).
+export function mercToTilePx(x: number, y: number) {
+  const fx = (x - X0) / TILE_3857, fy = (y - Y0) / TILE_3857;
+  const col = Math.floor(fx), row = Math.floor(fy);
+  return { col, row, px: (fx - col) * TILE_PX, py: (1 - (fy - row)) * TILE_PX };
+}
