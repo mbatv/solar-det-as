@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type * as Leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
+import Link from "next/link";
 import { areaStats, peers, rankAgainst, type Cell, type Roof } from "@/lib/stats";
 import { verdict } from "@/lib/verdict";
 import { ASSUMPTIONS, leadsCsv, leadsFor, totalKwp } from "@/lib/leads";
@@ -27,7 +28,13 @@ export default function RadarMap() {
   const LRef = useRef<typeof Leaflet | null>(null);
   const [town, setTown] = useState<Town | null>(null);
   const [failed, setFailed] = useState(false);
-  const [center, setCenter] = useState<[number, number]>(START);
+  // /map?lat=..&lon=.. (links from a campaign) opens on that roof
+  const [center, setCenter] = useState<[number, number]>(() => {
+    if (typeof window === "undefined") return START;
+    const q = new URLSearchParams(window.location.search);
+    const lat = Number(q.get("lat")), lon = Number(q.get("lon"));
+    return lat && lon ? [lat, lon] : START;
+  });
   const [radius, setRadius] = useState<100 | 200 | 350>(200);
   const [eur, setEur] = useState<number>(ASSUMPTIONS.defaultEurPerKwh);
   const [selected, setSelected] = useState<Row | null>(null);
@@ -35,13 +42,6 @@ export default function RadarMap() {
   const [saved, setSaved] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
-
-  // /map?lat=..&lon=.. (links from a campaign) opens on that roof
-  useEffect(() => {
-    const q = new URLSearchParams(window.location.search);
-    const lat = Number(q.get("lat")), lon = Number(q.get("lon"));
-    if (lat && lon) setCenter([lat, lon]);
-  }, []);
 
   useEffect(() => {
     fetch("/data/town.json").then((r) => r.json()).then(setTown).catch(() => setFailed(true));
@@ -61,9 +61,7 @@ export default function RadarMap() {
       if (!alive || !el.current) return;
       const L = (mod.default ?? mod) as typeof Leaflet;
       LRef.current = L;
-      const q = new URLSearchParams(window.location.search);
-      const start: [number, number] = Number(q.get("lat")) && Number(q.get("lon")) ? [Number(q.get("lat")), Number(q.get("lon"))] : START;
-      const m = L.map(el.current, { preferCanvas: true, zoomControl: true, attributionControl: true }).setView(start, 19);
+      const m = L.map(el.current, { preferCanvas: true, zoomControl: true, attributionControl: true }).setView(center, 19);
       map.current = m;
       L.tileLayer.wms(WMS, { layers: LAYER, format: "image/jpeg", maxZoom: 21, maxNativeZoom: 20, attribution: "Orthophoto © ICGC · Buildings © Overture Maps (OSM, IGN)" } as Leaflet.WMSOptions).addTo(m);
       const renderer = L.canvas({ padding: 0.5, tolerance: 3 });
@@ -92,6 +90,8 @@ export default function RadarMap() {
       setReady(true);
     });
     return () => { alive = false; };
+    // built once: `center` is only the opening view, later moves are handled by the circle effect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [town]);
 
   // Circle + selected outline follow state.
@@ -155,7 +155,7 @@ export default function RadarMap() {
       <div ref={el} className="radar-map" />
       <aside className="radar-panel">
         <header>
-          <a href="/">SOLAR RADAR</a> · Cambrils pilot · <a href="/campaigns">campaigns</a>
+          <Link href="/">SOLAR RADAR</Link> · Cambrils pilot · <Link href="/campaigns">campaigns</Link>
           <div className="dim">
             photo: ICGC 25 cm · flight {flight ? flight.date ?? "date unavailable" : "…"}
             {town && <> · scan {String(town.meta.roofs)} roofs, {pct(Number(town.meta.share))} with panels</>}
@@ -199,7 +199,7 @@ export default function RadarMap() {
                 <button onClick={csv}>[ download CSV ]</button>
                 <button onClick={save} disabled={saving || a.leads.length === 0}>[ {saving ? "saving…" : "save as campaign"} ]</button>
               </div>
-              {saved && (saved.startsWith("error") ? <div>{saved}</div> : <div>saved → <a href={`/campaigns/${saved}`}>open campaign</a></div>)}
+              {saved && (saved.startsWith("error") ? <div>{saved}</div> : <div>saved → <Link href={`/campaigns/${saved}`}>open campaign</Link></div>)}
               <table>
                 <thead><tr><th>#</th><th>m²</th><th>kWp</th><th>kWh/yr</th><th>€/yr</th><th>type</th></tr></thead>
                 <tbody>
