@@ -48,6 +48,11 @@ export default function RadarMap() {
     fetch("/data/town.json").then((r) => r.json()).then(setTown).catch(() => setFailed(true));
   }, []);
 
+  // keep the chosen spot in the URL so a view can be shared / reported
+  useEffect(() => {
+    window.history.replaceState(null, "", `/map?lat=${center[0].toFixed(6)}&lon=${center[1].toFixed(6)}`);
+  }, [center]);
+
   useEffect(() => {
     let cancelled = false;
     getFlightDate(center[0], center[1]).then((f) => !cancelled && setFlight(f));
