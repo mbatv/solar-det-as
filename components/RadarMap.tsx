@@ -10,8 +10,8 @@ import { getFlightDate } from "@/lib/flightDate";
 import { WMS, LAYER } from "@/lib/tiles";
 import { saveCampaign } from "@/app/campaigns/actions";
 
-// town.json roof row: [id, lon, lat, area, floors, status 0 none/1 review/2 panel, score, foundBy 0 scan/1 recheck, ring]
-type Row = [number, number, number, number, number | null, 0 | 1 | 2, number, 0 | 1, [number, number][]];
+// town.json roof row: [id, lon, lat, area, floors, status 0 none/1 review/2 panel, score, foundBy 0 scan/1 recheck, ring, 1 = detected building (no public outline)]
+type Row = [number, number, number, number, number | null, 0 | 1 | 2, number, 0 | 1, [number, number][], 0 | 1];
 type Town = { meta: Record<string, number | string>; roofs: Row[]; cells: Cell[]; boxes: [number, number, number, number, 0 | 1, number][] };
 const STATUS = ["none", "review", "panel"] as const;
 const RADII = [100, 200, 350] as const;
@@ -75,7 +75,7 @@ export default function RadarMap() {
         L.polygon(ll, { renderer, weight: st === 2 ? 4.5 : 3, color: "#000", opacity: st === 0 ? 0.35 : 0.6, fill: false, interactive: false }).addTo(outlines);
         const poly = L.polygon(ll, {
           renderer, weight: st === 2 ? 2 : 1, color: "#fff", opacity: st === 0 ? 0.7 : 1,
-          dashArray: st === 1 ? "3 3" : undefined, fill: true, fillColor: "#fff", fillOpacity: st === 2 ? 0.12 : 0, interactive: true,
+          dashArray: r[9] ? "6 3" : st === 1 ? "3 3" : undefined, fill: true, fillColor: "#fff", fillOpacity: st === 2 ? 0.12 : 0, interactive: true,
         });
         poly.on("click", (e) => { L.DomEvent.stopPropagation(e); setSelected(r); setCenter([r[2], r[1]]); });
         poly.addTo(outlines);
@@ -173,6 +173,7 @@ export default function RadarMap() {
           <section>
             <h2>ROOF #{selected[0]}</h2>
             <div>{selected[5] === 2 ? `● panels detected (score ${selected[6].toFixed(2)}${selected[7] ? ", found on 2× re-check" : ""})` : selected[5] === 1 ? `○ needs review (score ${selected[6].toFixed(2)})` : `no panels observed on the ${flight?.date ?? ""} photo`}</div>
+            {selected[9] === 1 && <div className="dim">building not in public outline data, tracked from its detected panels (outline approximate)</div>}
             <div className="dim">{selected[3]} m² footprint{selected[4] ? ` · ${selected[4]} floors` : ""} · {selected[2].toFixed(5)}, {selected[1].toFixed(5)}</div>
           </section>
         )}
@@ -218,8 +219,8 @@ export default function RadarMap() {
           </>
         )}
         <footer className="dim small">
-          legend: ● white dot = panels detected · ○ = needs review · white outline = roof with panels · grey = no panels observed
-          {town && <> · {String(town.meta.offRoofPanelBoxes)} arrays on buildings missing from the outline data (roof count is a lower bound)</>}
+          legend: ● white dot = panels detected · ○ = needs review · white outline = roof with panels · dashed square = building we track ourselves (missing from public outline data) · thin = no panels observed
+          {town && <> · {String(town.meta.detectedBuildings)} buildings with panels are missing from public outline data and tracked from the detections; unmapped buildings without panels are not counted yet</>}
         </footer>
       </aside>
     </div>
