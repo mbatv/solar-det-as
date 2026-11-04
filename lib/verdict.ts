@@ -94,7 +94,7 @@ export function verdict(input: VerdictInput): Verdict {
     `${s.withPanels} of ${s.roofs} roofs have panels (${pct(s.share)}, 95% range ${pct(s.lo)}–${pct(s.hi)}).`,
     `That is the ${ord(rank.percentile)} among ${vs} (median ${pct(rank.median)}, top quarter starts at ${pct(rank.q75)}).`,
   ];
-  if (s.review > 0) reasons.push(`${plural(s.review, "roof")} flagged for review are counted in neither group.`);
+  if (s.review > 0) reasons.push(`${plural(s.review, "roof")} flagged for review ${s.review === 1 ? "is" : "are"} counted in neither group.`);
 
   const leads = input.leads ?? [];
   const without = s.roofs - s.withPanels - s.review;

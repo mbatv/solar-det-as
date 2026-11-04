@@ -11,8 +11,8 @@ import {
   type LeadRow,
   type LeadStatus,
 } from "@/lib/supabase";
-import { flatEntries, fmtDate, fmtInt, fmtKwp, fmtValue, mapsHref } from "../format";
-import LeadActions from "./LeadActions";
+import { assumptionText, flatEntries, fmtDate, fmtDay, fmtKwp, fmtValue, STATUS_LABEL } from "../format";
+import WorkList, { type WorkLead } from "./WorkList";
 import s from "../campaigns.module.css";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,6 +29,23 @@ export default function CampaignPage({ params }: PageProps<"/campaigns/[id]">) {
       </Suspense>
     </main>
   );
+}
+
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const isTextList = (v: unknown): v is string[] =>
+  Array.isArray(v) && v.length > 0 && v.every((x) => typeof x === "string");
+
+/** One plain-language sentence about the area, from the stats saved with the campaign. */
+function summary(stats: Record<string, unknown>, leadCount: number): string {
+  const roofs = num(stats?.roofs);
+  const withPanels = num(stats?.withPanels);
+  const list = `${leadCount} roof${leadCount === 1 ? "" : "s"} without panels on your list`;
+  if (roofs != null && withPanels != null && roofs > 0) {
+    return `${withPanels} of ${roofs} roofs here already have solar panels (${Math.round(
+      (withPanels / roofs) * 100,
+    )}%) — ${list}, largest first.`;
+  }
+  return `${list.charAt(0).toUpperCase()}${list.slice(1)}, largest first.`;
 }
 
 async function Campaign({ params }: { params: Promise<{ id: string }> }) {
@@ -77,188 +94,163 @@ async function Campaign({ params }: { params: Promise<{ id: string }> }) {
     totalKwp += Number(l.kwp ?? 0);
     if (l.status === "won") wonKwp += Number(l.kwp ?? 0);
   }
+  const total = leads?.length ?? 0;
 
-  const center =
-    campaign.center_lat != null && campaign.center_lon != null
-      ? `${campaign.center_lat.toFixed(5)}, ${campaign.center_lon.toFixed(5)}`
-      : "—";
-  const isTextList = (v: unknown): v is string[] =>
-    Array.isArray(v) && v.length > 0 && v.every((x) => typeof x === "string");
-  const textLists = Object.entries(campaign.stats ?? {}).filter((e): e is [string, string[]] => isTextList(e[1]));
-  const stats = flatEntries(campaign.stats).filter(([, v]) => !isTextList(v));
-  const assumptions = flatEntries(campaign.assumptions);
+  const work: WorkLead[] = (leads ?? []).map((l, i) => ({
+    id: l.id,
+    rank: i + 1,
+    roofId: l.roof_id,
+    lat: l.lat,
+    lon: l.lon,
+    area: l.area_m2,
+    kwp: l.kwp,
+    kwhYr: l.kwh_yr,
+    eurYr: l.eur_yr,
+    segment: l.segment,
+    status: l.status,
+    updatedAt: l.updated_at,
+    next: NEXT_STEPS[l.status] ?? [],
+    events: (eventsByLead.get(l.id) ?? []).map((e) => ({
+      id: e.id,
+      from: e.from_status,
+      to: e.to_status,
+      note: e.note,
+      at: e.created_at,
+    })),
+  }));
+
+  const stats = campaign.stats ?? {};
+  const reasons = isTextList(stats.reasons) ? stats.reasons : [];
+  const workItems = isTextList(stats.workItems) ? stats.workItems : [];
+  const rawStats = flatEntries(stats).filter(([, v]) => !isTextList(v));
+  const assumptions = Object.entries(campaign.assumptions ?? {});
+  const moves = (events ?? []).filter((e) => e.from_status != null);
 
   return (
     <>
-      <header style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <header className={s.head}>
         <h1 className={s.h1}>{campaign.name}</h1>
-        <p>
-          verdict: <strong>{campaign.verdict}</strong>
-        </p>
-        <p className={s.dim}>
-          center {center} · radius {campaign.radius_m ?? "—"} m · flight {campaign.flight_date ?? "—"} ·
-          saved {fmtDate(campaign.created_at)}
-        </p>
+        <p className={s.verdict}>{campaign.verdict}</p>
+        <p>{summary(stats, total)}</p>
+        <p className={s.dim}>aerial photo taken {fmtDay(campaign.flight_date)}</p>
       </header>
 
-      <section className={s.box}>
-        <h2 className={s.sectionTitle}>Pipeline</h2>
-        <dl className={s.kv}>
-          <div>
-            <dt>leads</dt>
-            <dd>{leads?.length ?? 0}</dd>
+      {total > 0 && (
+        <section aria-label="progress" className={s.progress}>
+          <div className={s.bar} role="img" aria-label={`${total - counts.to_visit} of ${total} roofs worked`}>
+            {LEAD_STATUSES.map((st) =>
+              counts[st] > 0 ? (
+                <span key={st} data-status={st} style={{ flexGrow: counts[st] }} title={`${counts[st]} ${STATUS_LABEL[st]}`} />
+              ) : null,
+            )}
           </div>
-          {LEAD_STATUSES.map((st) => (
-            <div key={st}>
-              <dt>{st.replace("_", " ")}</dt>
-              <dd>{counts[st]}</dd>
-            </div>
-          ))}
-          <div>
-            <dt>total kWp</dt>
-            <dd>{fmtKwp(totalKwp)}</dd>
-          </div>
-          <div>
-            <dt>won kWp</dt>
-            <dd>{fmtKwp(wonKwp)}</dd>
-          </div>
-        </dl>
-      </section>
-
-      {textLists.map(([k, items]) => (
-        <section key={k} className={s.box}>
-          <h2 className={s.sectionTitle}>{k === "workItems" ? "Work items" : k}</h2>
-          <ul className={s.log}>
-            {items.map((x) => (
-              <li key={x}>→ {x}</li>
+          <ul className={s.legend}>
+            {LEAD_STATUSES.map((st) => (
+              <li key={st}>
+                <span className={s.swatch} data-status={st} aria-hidden />
+                <strong>{counts[st]}</strong> <span className={s.dim}>{STATUS_LABEL[st]}</span>
+              </li>
             ))}
           </ul>
         </section>
-      ))}
-
-      {stats.length > 0 && (
-        <section className={s.box}>
-          <h2 className={s.sectionTitle}>Area stats at save time</h2>
-          <dl className={s.kv}>
-            {stats.map(([k, v]) => (
-              <div key={k}>
-                <dt>{k}</dt>
-                <dd>{fmtValue(k, v)}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
       )}
 
-      {assumptions.length > 0 && (
-        <section className={s.box}>
-          <h2 className={s.sectionTitle}>Assumptions</h2>
-          <dl className={s.kv}>
-            {assumptions.map(([k, v]) => (
-              <div key={k}>
-                <dt>{k}</dt>
-                <dd>{fmtValue(k, v)}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      )}
+      <WorkList
+        leads={work}
+        csv={{
+          id: campaign.id,
+          name: campaign.name,
+          verdict: campaign.verdict,
+          centerLat: campaign.center_lat,
+          centerLon: campaign.center_lon,
+          radiusM: campaign.radius_m,
+          flightDate: campaign.flight_date,
+          assumptions: campaign.assumptions ?? {},
+        }}
+      />
 
-      <section>
-        <h2 className={s.sectionTitle}>Leads · largest roof first</h2>
-        {!leads || leads.length === 0 ? (
-          <p className={s.dim}>This campaign has no leads.</p>
-        ) : (
-          <div className={s.tableWrap}>
-            <table className={s.table}>
-              <thead>
-                <tr>
-                  <th className={s.num}>#</th>
-                  <th className={s.num}>roof</th>
-                  <th>segment</th>
-                  <th className={s.num}>area m²</th>
-                  <th className={s.num}>kWp</th>
-                  <th className={s.num}>kWh/yr</th>
-                  <th className={s.num}>€/yr</th>
-                  <th>where</th>
-                  <th>status</th>
-                  <th>next step</th>
-                  <th>log</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leads.map((l, i) => {
-                  const log = eventsByLead.get(l.id) ?? [];
-                  return (
-                    <tr key={l.id}>
-                      <td className={`${s.num} ${s.dim}`}>{i + 1}</td>
-                      <td className={s.num}>{l.roof_id ?? "—"}</td>
-                      <td>{l.segment ?? "—"}</td>
-                      <td className={s.num}>{fmtInt(l.area_m2)}</td>
-                      <td className={s.num}>{fmtKwp(l.kwp)}</td>
-                      <td className={s.num}>{fmtInt(l.kwh_yr)}</td>
-                      <td className={s.num}>{fmtInt(l.eur_yr)}</td>
-                      <td>
-                        {l.lat != null && l.lon != null ? (
-                          <span className={s.actions}>
-                            <a href={mapsHref(l.lat, l.lon)} target="_blank" rel="noreferrer">
-                              gmaps↗
-                            </a>
-                            <Link href={`/map?lat=${l.lat}&lon=${l.lon}`}>map</Link>
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td>
-                        <span data-testid="lead-status">{l.status.replace("_", " ")}</span>
-                      </td>
-                      <td>
-                        <LeadActions leadId={l.id} next={NEXT_STEPS[l.status]} />
-                      </td>
-                      <td>
-                        <details className={s.details}>
-                          <summary>{log.length} event{log.length === 1 ? "" : "s"}</summary>
-                          <ul className={s.log}>
-                            {log.map((e) => (
-                              <li key={e.id}>
-                                <span className={s.dim}>{fmtDate(e.created_at)}</span>{" "}
-                                {e.from_status ?? "∅"} → {e.to_status}
-                                {e.note ? <span className={s.dim}> · {e.note}</span> : null}
-                              </li>
-                            ))}
-                          </ul>
-                        </details>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <details className={s.details}>
+        <summary>details</summary>
+        <div className={s.detailBody}>
+          {reasons.length > 0 && (
+            <section>
+              <h2 className={s.sectionTitle}>Why this verdict</h2>
+              <ul className={s.log}>
+                {reasons.map((x) => (
+                  <li key={x}>· {x}</li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-      {events && events.length > 0 && (
-        <section className={s.box}>
-          <h2 className={s.sectionTitle}>Activity · newest first</h2>
-          <ul className={s.log}>
-            {events
-              .filter((e) => e.from_status != null)
-              .slice(0, 50)
-              .map((e) => (
+          {workItems.length > 0 && (
+            <section>
+              <h2 className={s.sectionTitle}>Suggested plan</h2>
+              <ul className={s.log}>
+                {workItems.map((x) => (
+                  <li key={x}>→ {x}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <section>
+            <h2 className={s.sectionTitle}>Area</h2>
+            <ul className={s.log}>
+              <li>
+                centre{" "}
+                {campaign.center_lat != null && campaign.center_lon != null
+                  ? `${campaign.center_lat.toFixed(5)}, ${campaign.center_lon.toFixed(5)}`
+                  : "—"}{" "}
+                · radius {campaign.radius_m ?? "—"} m
+              </li>
+              <li>
+                {fmtKwp(totalKwp)} kWp possible on the list · {fmtKwp(wonKwp)} kWp won
+              </li>
+              <li>saved {fmtDate(campaign.created_at)}</li>
+            </ul>
+          </section>
+
+          {assumptions.length > 0 && (
+            <section>
+              <h2 className={s.sectionTitle}>Assumptions</h2>
+              <ul className={s.log}>
+                {assumptions.map(([k, v]) => (
+                  <li key={k}>· {assumptionText(k, v)}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <section>
+            <h2 className={s.sectionTitle}>Activity · newest first</h2>
+            <ul className={s.log}>
+              {moves.slice(0, 200).map((e) => (
                 <li key={e.id}>
-                  <span className={s.dim}>{fmtDate(e.created_at)}</span> lead #{rankOf.get(e.lead_id)}:{" "}
-                  {e.from_status} → {e.to_status}
+                  <span className={s.dim}>{fmtDate(e.created_at)}</span> roof #{rankOf.get(e.lead_id)}:{" "}
+                  {STATUS_LABEL[e.from_status ?? ""] ?? e.from_status} → {STATUS_LABEL[e.to_status] ?? e.to_status}
                   {e.note ? <span className={s.dim}> · {e.note}</span> : null}
                 </li>
               ))}
-            {events.every((e) => e.from_status == null) && (
-              <li className={s.dim}>No moves yet. Every lead starts at “to visit”.</li>
-            )}
-          </ul>
-        </section>
-      )}
+              {moves.length === 0 && <li className={s.dim}>No moves yet. Every roof starts at “to visit”.</li>}
+            </ul>
+          </section>
+
+          {rawStats.length > 0 && (
+            <section>
+              <h2 className={s.sectionTitle}>All numbers at save time</h2>
+              <dl className={s.kv}>
+                {rawStats.map(([k, v]) => (
+                  <div key={k}>
+                    <dt>{k}</dt>
+                    <dd>{fmtValue(k, v)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+        </div>
+      </details>
     </>
   );
 }

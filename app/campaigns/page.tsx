@@ -2,8 +2,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
 import type { Metadata } from "next";
-import { supabase, LEAD_STATUSES, type CampaignRow, type LeadStatus } from "@/lib/supabase";
-import { fmtKwp } from "./format";
+import { supabase, type CampaignRow, type LeadStatus } from "@/lib/supabase";
+import { fmtDay } from "./format";
 import s from "./campaigns.module.css";
 
 export const metadata: Metadata = { title: "Campaigns · Solar Radar" };
@@ -15,9 +15,9 @@ export default function CampaignsPage() {
         <Link href="/">[ ← home ]</Link>
         <Link href="/map">[ map ]</Link>
       </nav>
-      <header>
+      <header className={s.head}>
         <h1 className={s.h1}>Campaigns</h1>
-        <p className={s.dim}>Saved areas and their door-to-door pipeline.</p>
+        <p className={s.dim}>Your saved areas and how far the door-to-door work has got.</p>
       </header>
       <Suspense fallback={<p className={s.dim}>loading campaigns…</p>}>
         <CampaignList />
@@ -26,15 +26,15 @@ export default function CampaignsPage() {
   );
 }
 
-type Row = Pick<CampaignRow, "id" | "name" | "verdict" | "radius_m" | "created_at"> & {
-  leads: { status: LeadStatus; kwp: number | null }[];
+type Row = Pick<CampaignRow, "id" | "name" | "verdict" | "created_at"> & {
+  leads: { status: LeadStatus }[];
 };
 
 async function CampaignList() {
   await connection();
   const { data, error } = await supabase
     .from("campaigns")
-    .select("id, name, verdict, radius_m, created_at, leads(status, kwp)")
+    .select("id, name, verdict, created_at, leads(status)")
     .order("created_at", { ascending: false })
     .returns<Row[]>();
 
@@ -45,59 +45,33 @@ async function CampaignList() {
   if (!data || data.length === 0) {
     return (
       <div className={s.empty}>
-        <p>No campaigns yet.</p>
-        <p className={s.dim}>
-          Open the map, click a circle, check the verdict and save its lead list as a campaign.
-        </p>
-        <Link href="/map">[ open map → ]</Link>
+        <p>No campaigns yet — open the map, pick an area and save it.</p>
+        <Link href="/map">[ open the map → ]</Link>
       </div>
     );
   }
 
   return (
-    <div className={s.tableWrap}>
-      <table className={s.table}>
-        <thead>
-          <tr>
-            <th>name</th>
-            <th>verdict</th>
-            <th className={s.num}>radius</th>
-            <th className={s.num}>leads</th>
-            <th>pipeline</th>
-            <th className={s.num}>won kWp</th>
-            <th>created</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((c) => {
-            const counts = Object.fromEntries(LEAD_STATUSES.map((st) => [st, 0])) as Record<LeadStatus, number>;
-            let wonKwp = 0;
-            for (const l of c.leads) {
-              counts[l.status] = (counts[l.status] ?? 0) + 1;
-              if (l.status === "won") wonKwp += Number(l.kwp ?? 0);
-            }
-            return (
-              <tr key={c.id}>
-                <td>
-                  <Link className={s.rowLink} href={`/campaigns/${c.id}`}>
-                    {c.name}
-                  </Link>
-                </td>
-                <td>{c.verdict}</td>
-                <td className={s.num}>{c.radius_m ?? "—"} m</td>
-                <td className={s.num}>{c.leads.length}</td>
-                <td>
-                  {LEAD_STATUSES.filter((st) => counts[st] > 0)
-                    .map((st) => `${counts[st]} ${st.replace("_", " ")}`)
-                    .join(" · ") || <span className={s.dim}>—</span>}
-                </td>
-                <td className={s.num}>{fmtKwp(wonKwp)}</td>
-                <td className={s.dim}>{c.created_at.slice(0, 10)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <ul className={s.cards}>
+      {data.map((c) => {
+        const total = c.leads.length;
+        const visited = c.leads.filter((l) => l.status !== "to_visit").length;
+        const won = c.leads.filter((l) => l.status === "won").length;
+        return (
+          <li key={c.id}>
+            <Link className={s.card} href={`/campaigns/${c.id}`}>
+              <span className={s.cardTop}>
+                <span className={s.cardName}>{c.name}</span>
+                <span className={s.dim}>{fmtDay(c.created_at)}</span>
+              </span>
+              <span className={s.verdict}>{c.verdict}</span>
+              <span className={s.dim}>
+                {total} roof{total === 1 ? "" : "s"} · {visited} visited · {won} won
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

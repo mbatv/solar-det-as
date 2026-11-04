@@ -1,4 +1,4 @@
-// Small display helpers shared by the campaigns pages (server-safe, no deps).
+// Small display helpers shared by the campaigns pages (server- and client-safe, no deps).
 
 export const fmtInt = (n: number | null | undefined) =>
   n == null ? "—" : Math.round(Number(n)).toLocaleString("en-GB");
@@ -6,10 +6,54 @@ export const fmtInt = (n: number | null | undefined) =>
 export const fmtKwp = (n: number | null | undefined) =>
   n == null ? "—" : (Math.round(Number(n) * 10) / 10).toLocaleString("en-GB", { minimumFractionDigits: 1 });
 
+/** Timestamp for logs, e.g. "4 Nov 2026, 20:03". UTC so server and client agree. */
 export const fmtDate = (iso: string) => {
   const d = new Date(iso);
-  return `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)}Z`;
+  return `${fmtDay(iso)}, ${d.toISOString().slice(11, 16)}`;
 };
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Plain day, e.g. "4 Nov 2026" (accepts "2026-11-04" or a full ISO timestamp). */
+export const fmtDay = (iso: string | null | undefined) => {
+  if (!iso) return "—";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
+};
+
+/** Human label for a lead status. */
+export const STATUS_LABEL: Record<string, string> = {
+  to_visit: "to visit",
+  visited: "visited",
+  quoted: "quoted",
+  won: "won",
+  lost: "lost",
+};
+
+/** Button label for moving a lead to a status. */
+export const STEP_LABEL: Record<string, string> = {
+  visited: "mark visited",
+  quoted: "mark quoted",
+  won: "won",
+  lost: "lost",
+};
+
+export type StatusFilter = "all" | "to_visit" | "in_progress" | "closed";
+
+export const FILTERS: { key: StatusFilter; label: string }[] = [
+  { key: "all", label: "all" },
+  { key: "to_visit", label: "to visit" },
+  { key: "in_progress", label: "in progress" },
+  { key: "closed", label: "closed" },
+];
+
+export function matchesFilter(status: string, f: StatusFilter): boolean {
+  if (f === "all") return true;
+  if (f === "to_visit") return status === "to_visit";
+  if (f === "in_progress") return status === "visited" || status === "quoted";
+  return status === "won" || status === "lost";
+}
 
 const PCT_KEYS = /share|^lo$|^hi$|fraction|pct|median|q75|q25/i;
 
@@ -48,3 +92,22 @@ export function flatEntries(obj: Record<string, unknown> | null | undefined): [s
 
 export const mapsHref = (lat: number, lon: number) =>
   `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+
+export const radarHref = (lat: number, lon: number) => `/map?lat=${lat}&lon=${lon}`;
+
+// Plain-language versions of the assumption keys saved with a campaign.
+const ASSUMPTION_TEXT: Record<string, (v: string) => string> = {
+  usableFraction: (v) => `usable roof area = footprint x ${v}`,
+  m2PerKwp: (v) => `${v} m2 of usable roof per kWp`,
+  houseCapKwp: (v) => `house systems capped at ${v} kWp`,
+  largeRoofM2: (v) => `roofs >= ${v} m2 count as collective/business (no cap)`,
+  largeFloors: (v) => `buildings with >= ${v} floors count as collective/business (no cap)`,
+  yieldKwhPerKwp: (v) => `${v} kWh per kWp per year`,
+  eurPerKwh: (v) => `electricity price ${v} EUR/kWh`,
+  defaultEurPerKwh: (v) => `default electricity price ${v} EUR/kWh`,
+};
+
+export function assumptionText(key: string, v: unknown): string {
+  const val = typeof v === "object" && v !== null ? JSON.stringify(v) : String(v);
+  return ASSUMPTION_TEXT[key]?.(val) ?? `${key} = ${val}`;
+}
